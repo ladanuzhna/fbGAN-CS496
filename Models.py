@@ -8,13 +8,13 @@ KERNEL_SIZE = 5
 class ResidualBlock(tf.keras.Model):
 
     def __init__(self):
-        self.model = tf.keras.Sequential([nn.relu(HIDDEN_UNITS)
+        self.model = tf.keras.Sequential([nn.relu(HIDDEN_UNITS),
                         nn.conv1d(input=HIDDEN_UNITS,filters=KERNEL_SIZE,padding='same',stride=1,activation='relu'),
                         nn.conv1d(input=HIDDEN_UNITS,filters=KERNEL_SIZE,padding='same',stride=1)],
                                          name="ResidualBlock")
 
-    def __call__(self):
-        pass
+    def __call__(self,X,alpha = 0.3):
+        return X + alpha*self.model(X)
 
 class Generator(tf.keras.Model):
 
