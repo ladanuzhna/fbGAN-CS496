@@ -1,8 +1,22 @@
 import tensorflow as tf
 
+SEQ_LENGTH = 128
+HIDDEN_UNITS = 100
+PADDING = 2
+KERNEL_SIZE = 5
+
+class ResidualBlock(tf.keras.Model):
+
+    def __init__(self):
+        self.relu = tf.nn.relu(HIDDEN_UNITS)
+        self.conv1d = tf.nn.conv1d(input=HIDDEN_UNITS,padding=PADDING)
+
+    def __call__(self):
+        pass
+
 class Generator(tf.keras.Model):
 
-    def __init__(self,input_size = 50):
+    def __init__(self,input_size = SEQ_LENGTH):
         """
         implementation of Generator
         :param input_size: size of the sequence (input noise)
