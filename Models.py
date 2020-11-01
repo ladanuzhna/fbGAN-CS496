@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow import nn
+from tensorflow.keras.layers import Conv1D,Input,Dense
 
 SEQ_LENGTH = 128
 HIDDEN_UNITS = 100
@@ -8,10 +8,12 @@ KERNEL_SIZE = 5
 class ResidualBlock(tf.keras.Model):
 
     def __init__(self):
-        self.model = tf.keras.Sequential([nn.relu(HIDDEN_UNITS),
-                        nn.conv1d(input=HIDDEN_UNITS,filters=KERNEL_SIZE,padding='same',stride=1,activation='relu'),
-                        nn.conv1d(input=HIDDEN_UNITS,filters=KERNEL_SIZE,padding='same',stride=1)],
-                                         name="ResidualBlock")
+        super(ResidualBlock, self).__init__()
+        self.model = tf.keras.models.Sequential([
+                        Input(shape=(1,HIDDEN_UNITS)),
+                        Dense(HIDDEN_UNITS,activation='relu'),
+                        Conv1D(filters=HIDDEN_UNITS,kernel_size=KERNEL_SIZE,padding='same',strides=1,activation='relu'),
+                        Conv1D(filters=HIDDEN_UNITS,kernel_size=KERNEL_SIZE,padding='same',strides=1)])
 
     def __call__(self,X,alpha = 0.3):
         return X + alpha*self.model(X)
