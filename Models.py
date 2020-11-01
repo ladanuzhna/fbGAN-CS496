@@ -1,15 +1,17 @@
 import tensorflow as tf
+from tensorflow import nn
 
 SEQ_LENGTH = 128
 HIDDEN_UNITS = 100
-PADDING = 2
 KERNEL_SIZE = 5
 
 class ResidualBlock(tf.keras.Model):
 
     def __init__(self):
-        self.relu = tf.nn.relu(HIDDEN_UNITS)
-        self.conv1d = tf.nn.conv1d(input=HIDDEN_UNITS,padding=PADDING)
+        self.model = tf.keras.Sequential([nn.relu(HIDDEN_UNITS)
+                        nn.conv1d(input=HIDDEN_UNITS,filters=KERNEL_SIZE,padding='same',stride=1,activation='relu'),
+                        nn.conv1d(input=HIDDEN_UNITS,filters=KERNEL_SIZE,padding='same',stride=1)],
+                                         name="ResidualBlock")
 
     def __call__(self):
         pass
