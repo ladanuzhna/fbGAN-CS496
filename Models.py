@@ -4,13 +4,14 @@ from tensorflow.keras.layers import Conv1D,Input,Dense
 SEQ_LENGTH = 128
 HIDDEN_UNITS = 100
 KERNEL_SIZE = 5
+BATCH_SIZE = 1
 
 class ResidualBlock(tf.keras.Model):
 
     def __init__(self):
         super(ResidualBlock, self).__init__()
         self.model = tf.keras.models.Sequential([
-                        Input(shape=(1,HIDDEN_UNITS)),
+                        Input(shape=(BATCH_SIZE,HIDDEN_UNITS)),
                         Dense(HIDDEN_UNITS,activation='relu'),
                         Conv1D(filters=HIDDEN_UNITS,kernel_size=KERNEL_SIZE,padding='same',strides=1,activation='relu'),
                         Conv1D(filters=HIDDEN_UNITS,kernel_size=KERNEL_SIZE,padding='same',strides=1)])
@@ -20,12 +21,15 @@ class ResidualBlock(tf.keras.Model):
 
 class Generator(tf.keras.Model):
 
-    def __init__(self,input_size = SEQ_LENGTH):
+    def __init__(self):
         """
         implementation of Generator
         :param input_size: size of the sequence (input noise)
         """
         super().__init__(name='generator')
+        self.input = Dense(SEQ_LENGTH,SEQ_LENGTH*HIDDEN_UNITS)
+        self.residual = tf.keras.models.Sequential([ResidualBlock(),ResidualBlock(),ResidualBlock(),
+                                                    ResidualBlock(),ResidualBlock()])
 
     def __call__(self, X, training = False):
         """
