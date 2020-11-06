@@ -58,6 +58,12 @@ class Discriminator(tf.keras.Model):
         """
         pass
 
+"""
+We can try different architectures for Feedback Analyzer here!
+I would follow the convention of creating Feedback_1 ... Feedback_2
+Can also compare the performance of these 
+"""
+
 class Feedback(tf.keras.Model):
 
     def __init__(self):
