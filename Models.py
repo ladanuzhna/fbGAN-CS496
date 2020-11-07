@@ -64,7 +64,7 @@ I would follow the convention of creating Feedback_1 ... Feedback_2
 Can also compare the performance of these 
 """
 
-class Feedback(tf.keras.Model):
+class Feedback_1(tf.keras.Model):
 
     def __init__(self):
         pass
