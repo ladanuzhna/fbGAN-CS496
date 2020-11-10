@@ -1,35 +1,34 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Conv1D,Input,Dense, Reshape
+from tensorflow.keras.layers import Conv1D,Input,Dense, Reshape, ReLU
 
-SEQ_LENGTH = 100
-HIDDEN_UNITS = 100
+SEQ_LENGTH = 50
+DIM = 16
+HIDDEN_UNITS = DIM * SEQ_LENGTH
+
 KERNEL_SIZE = 5
-BATCH_SIZE = 1
+BATCH_SIZE = None
 N_CHAR = 20
-N_SAMPLES = 150
-
+N_SAMPLES = 2000
+NOISE_SHAPE = 128
 
 def softmax(logits):
     shape = tf.shape(logits)
-    res = tf.nn.softmax(tf.reshape(logits, [-1, N_CHAR])
+    res = tf.nn.softmax(tf.reshape(logits, [-1,N_CHAR])
     return tf.reshape(res, shape)
-
 
 class ResidualBlock(tf.keras.layers.Layer):
 
     def __init__(self):
         super(ResidualBlock, self).__init__()
-        self.dense = Dense(HIDDEN_UNITS, activation='relu')
-        self.conv1d_1 = Conv1D(filters=HIDDEN_UNITS, kernel_size=KERNEL_SIZE, padding='same', strides=1,
-                               activation='relu')
+        self.relu = ReLU()
+        self.conv1d_1 = Conv1D(filters=HIDDEN_UNITS, kernel_size=KERNEL_SIZE, padding='same', strides=1, activation='relu')
         self.conv1d_2 = Conv1D(filters=HIDDEN_UNITS, kernel_size=KERNEL_SIZE, padding='same', strides=1)
 
-    def __call__(self, X, alpha=0.3):
-        x = self.dense(X)
+    def __call__(self,X,alpha = 0.3):
+        x = self.relu(X)
         x = self.conv1d_1(x)
         x = self.conv1d_2(x)
-        return x + alpha * self.model(x)
-
+        return x + alpha*x
 
 class Generator(tf.keras.Model):
 
@@ -41,7 +40,8 @@ class Generator(tf.keras.Model):
         super().__init__(name='generator')
 
         self.model = tf.keras.models.Sequential()
-        self.model.add(Dense(units=HIDDEN_UNITS, input_shape=()))  ##  input_shape =
+        self.model.add(Input(input_shape = (NOISE_SHAPE,), batch_size = BATCH_SIZE))
+        self.model.add(Dense(units = HIDDEN_UNITS))
         self.model.add(Reshape((-1, HIDDEN_UNITS, SEQ_LENGTH)))
 
         self.model.add(ResidualBlock())
@@ -50,11 +50,14 @@ class Generator(tf.keras.Model):
         self.model.add(ResidualBlock())
         self.model.add(ResidualBlock())
 
-        self.conv1 = tf.keras.layers.Conv1D(filters=N_CHAR, kernel_size=1)
+        self.conv1 = tf.keras.layers.Conv1D(filters = N_CHAR, kernel_size = 1)
+
+        # ?? how to then reshape this input into SEQ_LENGHT x N_CHAR ?
 
     def __call__(self, inputs):
-        x = self.model(inputs)
-        x = tf.transpose(x, perm=[0, 2, 1])
+        x = self.model(x)
+        x = tf.transpose(x, perm= [0, 2, 1])
+        # replace later with gumbel softmax
         x = softmax(x)
         return x
 
