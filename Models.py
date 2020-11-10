@@ -40,7 +40,7 @@ class Generator(tf.keras.Model):
         self.model = tf.keras.models.Sequential()
         self.model.add(Input(shape = (NOISE_SHAPE,), batch_size = BATCH_SIZE))
         self.model.add(Dense(units = DIM*SEQ_LENGTH))
-        self.model.add(Reshape((-1, DIM, SEQ_LENGTH)))
+        self.model.add(Reshape((-1, SEQ_LENGTH, DIM)))
 
         self.model.add(ResidualBlock())
         self.model.add(ResidualBlock())
@@ -48,7 +48,7 @@ class Generator(tf.keras.Model):
         self.model.add(ResidualBlock())
         self.model.add(ResidualBlock())
 
-        self.conv1 = Conv1D(filters = N_CHAR, kernel_size = 1)
+        self.model.add(Conv1D(filters = N_CHAR, kernel_size = 1))
 
     def __call__(self, inputs):
         x = self.model(inputs)
