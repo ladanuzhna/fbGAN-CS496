@@ -1,10 +1,8 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Conv1D,Input,Dense, Reshape, ReLU
+from tensorflow.keras.layers import Conv1D, Input, Dense, Reshape, ReLU, Permute
 
 SEQ_LENGTH = 50
 DIM = 16
-HIDDEN_UNITS = DIM * SEQ_LENGTH
-
 KERNEL_SIZE = 5
 BATCH_SIZE = None
 N_CHAR = 20
@@ -13,7 +11,7 @@ NOISE_SHAPE = 128
 
 def softmax(logits):
     shape = tf.shape(logits)
-    res = tf.nn.softmax(tf.reshape(logits, [-1,N_CHAR])
+    res = tf.nn.softmax(tf.reshape(logits, [-1,N_CHAR]))
     return tf.reshape(res, shape)
 
 class ResidualBlock(tf.keras.layers.Layer):
@@ -21,8 +19,8 @@ class ResidualBlock(tf.keras.layers.Layer):
     def __init__(self):
         super(ResidualBlock, self).__init__()
         self.relu = ReLU()
-        self.conv1d_1 = Conv1D(filters=HIDDEN_UNITS, kernel_size=KERNEL_SIZE, padding='same', strides=1, activation='relu')
-        self.conv1d_2 = Conv1D(filters=HIDDEN_UNITS, kernel_size=KERNEL_SIZE, padding='same', strides=1)
+        self.conv1d_1 = Conv1D(filters=DIM, kernel_size=KERNEL_SIZE, padding='same', strides=1, activation='relu')
+        self.conv1d_2 = Conv1D(filters=DIM, kernel_size=KERNEL_SIZE, padding='same', strides=1)
 
     def __call__(self,X,alpha = 0.3):
         x = self.relu(X)
@@ -40,9 +38,9 @@ class Generator(tf.keras.Model):
         super().__init__(name='generator')
 
         self.model = tf.keras.models.Sequential()
-        self.model.add(Input(input_shape = (NOISE_SHAPE,), batch_size = BATCH_SIZE))
-        self.model.add(Dense(units = HIDDEN_UNITS))
-        self.model.add(Reshape((-1, HIDDEN_UNITS, SEQ_LENGTH)))
+        self.model.add(Input(shape = (NOISE_SHAPE,), batch_size = BATCH_SIZE))
+        self.model.add(Dense(units = DIM*SEQ_LENGTH))
+        self.model.add(Reshape((-1, DIM, SEQ_LENGTH)))
 
         self.model.add(ResidualBlock())
         self.model.add(ResidualBlock())
@@ -50,17 +48,12 @@ class Generator(tf.keras.Model):
         self.model.add(ResidualBlock())
         self.model.add(ResidualBlock())
 
-        self.conv1 = tf.keras.layers.Conv1D(filters = N_CHAR, kernel_size = 1)
-
-        # ?? how to then reshape this input into SEQ_LENGHT x N_CHAR ?
+        self.conv1 = Conv1D(filters = N_CHAR, kernel_size = 1)
 
     def __call__(self, inputs):
-        x = self.model(x)
-        x = tf.transpose(x, perm= [0, 2, 1])
-        # replace later with gumbel softmax
+        x = self.model(inputs)
         x = softmax(x)
         return x
-
 
 class Discriminator(tf.keras.Model):
 
@@ -70,20 +63,34 @@ class Discriminator(tf.keras.Model):
         :param clip: value to which you clip the gradients (or False)
         """
         super().__init__(name='discriminator')
-        self.residual = tf.keras.models.Sequential([ResidualBlock(), ResidualBlock(), ResidualBlock(),
-                                                    ResidualBlock(), ResidualBlock()])
-        self.conv1d = Conv1D(N_CHAR, HIDDEN_UNITS, 1)
-        self.linear = Dense(SEQ_LENGTH*HIDDEN_UNITS, 1)
+
+        self.model = tf.keras.models.Sequential()
+        self.model.add(Input(shape = (SEQ_LENGTH,N_CHAR), batch_size = BATCH_SIZE))
+        self.model.add(Conv1D(filters = DIM, kernel_size = 1))
+
+        self.model.add(ResidualBlock())
+        self.model.add(ResidualBlock())
+        self.model.add(ResidualBlock())
+        self.model.add(ResidualBlock())
+        self.model.add(ResidualBlock())
+
+        self.model.add(Reshape((-1,DIM*SEQ_LENGTH)))
+        self.model.add(Dense(units = DIM*SEQ_LENGTH))
+        self.model.add(Dense(units = 1))
 
 
-    def call(self,X,training = False):
+    def __call__(self,inputs,training = False):
         """
         model's forward pass
         :param X: input of the size [batch_size, seq_length];
         :param training: specifies the behavior of the call;
         :return: Y: probability of each sequences being real of shape [batch_size, 1]
         """
-        pass
+
+        x = self.model(inputs)
+        return x
+
+
 
 """
 We can try different architectures for Feedback Analyzer here!
