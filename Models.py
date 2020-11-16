@@ -1,5 +1,10 @@
 import tensorflow as tf
+<<<<<<< HEAD
 from tensorflow.keras.layers import Conv1D, Input, Dense, Reshape, ReLU, Permute
+=======
+from tensorflow.keras.layers import Conv1D,Input,LSTM, Embedding, Dense, TimeDistributed, Bidirectional, LayerNormalization
+from tensorflow.keras.models import Model
+>>>>>>> ddc8970964279eef78ebc0127882f033b6717605
 
 SEQ_LENGTH = 50
 DIM = 16
@@ -92,16 +97,17 @@ class Discriminator(tf.keras.Model):
 
 
 
-"""
-We can try different architectures for Feedback Analyzer here!
-I would follow the convention of creating Feedback_1 ... Feedback_2
-Can also compare the performance of these 
-"""
+class Feedback_Net(tf.keras.Model):
 
-class Feedback(tf.keras.Model):
-
-    def __init__(self):
-        pass
+    def __init__(self,n_tags = 9,n_words=8421):
+        input = Input(shape=(SEQ_LENGTH,))
+        x = Embedding(input_dim=n_words, output_dim=128, input_length=SEQ_LENGTH)(input)
+        x = LayerNormalization()(x)
+        x = Bidirectional(LSTM(units=64, return_sequences=True, recurrent_dropout=0.1))(x)
+        x = Bidirectional(LSTM(units=64, return_sequences=True, recurrent_dropout=0.1))(x)
+        x = Bidirectional(LSTM(units=64, return_sequences=True, recurrent_dropout=0.1))(x)
+        y = TimeDistributed(Dense(n_tags, activation="softmax"))(x)
+        self.model = Model(input, y)
 
     def __call__(self,X,training):
         """
@@ -110,5 +116,5 @@ class Feedback(tf.keras.Model):
         :param training: specifies the behavior of the call;
         :return: Y: scores for the input sequences;
         """
-        pass
+        return self.model(X)
 
