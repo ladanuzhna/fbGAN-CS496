@@ -1,16 +1,18 @@
 import tensorflow as tf
 from Models import Generator, Discriminator
 
+BATCH_SIZE = 32
+NOISE_SHAPE = 128
 
 class GAN():
 
-    def __init__(self, batch_size=32):
+    def __init__(self, batch_size=BATCH_SIZE):
         self.batch_size = batch_size
         self.G = Generator()
         self.D = Discriminator()
 
-        self.G_loss = generator_loss()
-        self.D_loss = discriminator_loss()
+        self.G_loss = generator_loss
+        self.D_loss = discriminator_loss
 
         self.history = {"G_losses": [], "D_losses": []}
 
@@ -21,32 +23,32 @@ class GAN():
         self.D_optimizer = tf.keras.optimizers.Adam(learning_rate=lr)  # .minimize(self.D_loss,var_list=self.D_list)
 
     def generate_samples(self):
-        z = tf.random.normal([self.batch_size, 128])
+        z = tf.random.normal([self.batch_size, NOISE_SHAPE])
         generated = self.G(z)
         return generated
 
     @tf.function
     def G_train_step(self):
-        with tf.GradientTape as G_tape:
+        with tf.GradientTape() as tape:
             fake_samples = self.generate_samples()
             fake_score = self.D(fake_samples, training=True)
             G_loss = self.G_loss(fake_score)
 
-        G_gradients = G_tape.gradient(G_loss, self.G.trainable_variables)
+        G_gradients = tape.gradient(G_loss, self.G.trainable_variables)
         self.G_optimizer.apply_gradients((zip(G_gradients, self.G.trainable_variables)))
 
         return G_loss
 
     @tf.function
     def D_train_step(self, real_samples):
-        with tf.GradientTape as D_tape:
+        with tf.GradientTape() as tape:
             fake_samples = self.generate_samples()
             real_score = self.D(real_samples, training=True)
             fake_score = self.D(fake_samples, training=True)
 
             D_loss = discriminator_loss(real_score, fake_score)
 
-        D_gradients = D_tape.gradient(D_loss, self.D.trainable_variables)
+        D_gradients = tape.gradient(D_loss, self.D.trainable_variables)
         self.D_optimizer.apply_gradients((zip(D_gradients, self.D.trainable_variables)))
 
         return D_loss
@@ -56,7 +58,7 @@ class GAN():
         dataset = dataset.shuffle(input.shape[0], seed=0).batch(self.batch_size)
         return dataset
 
-    def train(self, input, epochs, ):
+    def train(self, input, epochs):
         # TODO: Print out losses per i steps correctly
 
         dataset = self.create_dataset(input)
@@ -77,7 +79,6 @@ class GAN():
 
 def generator_loss(fake):
     return -tf.math.reduce_mean(fake)
-
 
 def discriminator_loss(real, fake):
     return tf.math.reduce_mean(real) - tf.math.reduce_mean(fake)
