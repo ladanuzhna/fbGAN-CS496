@@ -1,38 +1,64 @@
 import tensorflow as tf
+import matplotlib.pyplot as plt
+
 from Models import Generator, Discriminator
 
 BATCH_SIZE = 32
 NOISE_SHAPE = 128
 
+
 class GAN():
 
-    def __init__(self, batch_size=BATCH_SIZE):
+    def __init__(self, batch_size=BATCH_SIZE, discriminator_steps=5):
         self.batch_size = batch_size
+
         self.G = Generator()
         self.D = Discriminator()
 
-        self.G_loss = generator_loss
-        self.D_loss = discriminator_loss
+        self.d_steps = discriminator_steps
 
         self.history = {"G_losses": [], "D_losses": []}
 
-        # TODO: Add WGAN lipschitz-penalty
+    def compile(self, lr=0.0002, gradient_penalty_weight=10):
+        self.G_optimizer = tf.keras.optimizers.Adam(learning_rate=lr, beta_1=0.5, beta_2=0.9)
+        self.D_optimizer = tf.keras.optimizers.Adam(learning_rate=lr, beta_1=0.5, beta_2=0.9)
 
-    def compile(self, lr=1e-4):
-        self.G_optimizer = tf.keras.optimizers.Adam(learning_rate=lr)  # .minimize(self.G_loss, var_list=self.G_list)
-        self.D_optimizer = tf.keras.optimizers.Adam(learning_rate=lr)  # .minimize(self.D_loss,var_list=self.D_list)
+        self.gp_weight = gradient_penalty_weight
 
     def generate_samples(self):
         z = tf.random.normal([self.batch_size, NOISE_SHAPE])
         generated = self.G(z)
         return generated
 
+    def generator_loss(self, fake_score):
+        return -tf.math.reduce_mean(fake_score)
+
+    def discriminator_loss(self, real_score, fake_score):
+        return tf.math.reduce_mean(real_score) - tf.math.reduce_mean(fake_score)
+
+    @tf.function
+    def gradient_penalty(self, real_samples, fake_samples):
+        alpha = tf.random.normal([self.batch_size, 1, 1], 0.0, 1.0)
+        real_samples = tf.cast(real_samples, tf.float32)
+        diff = fake_samples - real_samples
+        interpolated = real_samples + alpha * diff
+
+        with tf.GradientTape() as gp_tape:
+            gp_tape.watch(interpolated)
+            pred = self.D(interpolated, training=True)
+
+        grads = gp_tape.gradient(pred, [interpolated])[0]
+        norm = tf.sqrt(tf.reduce_sum(tf.square(grads), axis=[1, 2]))
+        gp = tf.reduce_mean((norm - 1.0) ** 2)
+
+        return gp
+
     @tf.function
     def G_train_step(self):
         with tf.GradientTape() as tape:
             fake_samples = self.generate_samples()
             fake_score = self.D(fake_samples, training=True)
-            G_loss = self.G_loss(fake_score)
+            G_loss = self.generator_loss(fake_score)
 
         G_gradients = tape.gradient(G_loss, self.G.trainable_variables)
         self.G_optimizer.apply_gradients((zip(G_gradients, self.G.trainable_variables)))
@@ -46,22 +72,23 @@ class GAN():
             real_score = self.D(real_samples, training=True)
             fake_score = self.D(fake_samples, training=True)
 
-            D_loss = discriminator_loss(real_score, fake_score)
+            D_loss = self.discriminator_loss(real_score, fake_score)
+            D_loss = D_loss + self.gradient_penalty(real_samples, fake_samples) * self.gp_weight
 
         D_gradients = tape.gradient(D_loss, self.D.trainable_variables)
         self.D_optimizer.apply_gradients((zip(D_gradients, self.D.trainable_variables)))
 
         return D_loss
 
-    def create_dataset(self, input):
-        dataset = tf.data.Dataset.from_tensor_slices(input)
-        dataset = dataset.shuffle(input.shape[0], seed=0).batch(self.batch_size)
+    def create_dataset(self, inputs):
+        dataset = tf.data.Dataset.from_tensor_slices(inputs)
+        dataset = dataset.shuffle(inputs.shape[0], seed=0).batch(self.batch_size, drop_remainder=True)
         return dataset
 
-    def train(self, input, epochs):
-        # TODO: Print out losses per i steps correctly
+    def train(self, inputs, epochs):
 
-        dataset = self.create_dataset(input)
+        dataset = self.create_dataset(inputs)
+        dataset = dataset.as_numpy_iterator()
 
         for epoch in range(epochs):
 
@@ -71,14 +98,16 @@ class GAN():
                 G_loss = self.G_train_step()
                 D_loss = self.D_train_step(sample_batch)
 
-            self.history["G_losses"].append(G_loss)
-            self.history["D_losses"].append(D_loss)
+            self.history["G_losses"].append(G_loss.numpy())
+            self.history["D_losses"].append(D_loss.numpy())
 
-            print(f"\tGenerator loss: {G_loss}. \tDiscriminator loss: {D_loss}")
+            print(f"\tGenerator loss: {G_loss}. \tDiscriminator loss: {D_loss.numpy}")
 
+    def plot_history(self):
+        D_losses = np.array(self.history['D_losses'])
+        G_losses = np.array(self.history['G_losses'])
 
-def generator_loss(fake):
-    return -tf.math.reduce_mean(fake)
-
-def discriminator_loss(real, fake):
-    return tf.math.reduce_mean(real) - tf.math.reduce_mean(fake)
+        plt.plot(np.arange(D_losses.shape[0]), D_losses, label='Discriminator loss')
+        plt.plot(np.arange(G_losses.shape[0]), G_losses, label='Generator loss')
+        plt.legend()
+        plt.show()
