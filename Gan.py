@@ -1,7 +1,7 @@
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-# from Models import Generator, Discriminator
+from Models import Generator, Discriminator
 
 BATCH_SIZE = 32
 NOISE_SHAPE = 128
