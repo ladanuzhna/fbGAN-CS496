@@ -14,7 +14,6 @@ class GAN():
         self.G = Generator()
         self.D = Discriminator()
         self.d_steps = discriminator_steps
-
         self.history = {"G_losses": [], "D_losses": [], "gradient_penalty": [], "sequences": []}
 
     def compile(self, lr=0.0002, gradient_penalty_weight=10):
