@@ -5,8 +5,8 @@ from keras.preprocessing.text import Tokenizer
 from sklearn.model_selection import train_test_split
 from keras.utils import to_categorical
 
-MAX_LEN = 128  # maximum length of the sequence
-MIN_LEN = 40
+import globals 
+
 
 def triplets(sequences):
     """

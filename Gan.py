@@ -1,22 +1,20 @@
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-# from Models import Generator, Discriminator
-
-BATCH_SIZE = 32
-NOISE_SHAPE = 128
+from Models import Generator, Discriminator
+import globals 
 
 
 class GAN():
 
-    def __init__(self, batch_size=BATCH_SIZE, discriminator_steps=5):
+    def __init__(self, batch_size=BATCH_SIZE, discriminator_steps=5, lr=0.0002, gradient_penalty_weight=10):
         self.batch_size = batch_size
         self.G = Generator()
         self.D = Discriminator()
         self.d_steps = discriminator_steps
+
         self.history = {"G_losses": [], "D_losses": [], "gradient_penalty": [], "sequences": []}
 
-    def compile(self, lr=0.0002, gradient_penalty_weight=10):
         self.G_optimizer = tf.keras.optimizers.Adam(learning_rate=lr, beta_1=0.5, beta_2=0.9)
         self.D_optimizer = tf.keras.optimizers.Adam(learning_rate=lr, beta_1=0.5, beta_2=0.9)
 
@@ -87,7 +85,7 @@ class GAN():
 
     def train(self, inputs, epochs):
 
-        # Pre-train discriminator
+        # Pre-train discriminator 
         for step in range(self.d_steps):
             dataset = self.create_dataset(inputs).as_numpy_iterator()
 
