@@ -6,13 +6,8 @@ from tensorflow.keras.layers import Conv1D,Input,LSTM, Embedding, Dense, TimeDis
 from tensorflow.keras.models import Model
 >>>>>>> ddc8970964279eef78ebc0127882f033b6717605
 
-SEQ_LENGTH = 50
-DIM = 16
-KERNEL_SIZE = 5
-BATCH_SIZE = None
-N_CHAR = 20
-N_SAMPLES = 2000
-NOISE_SHAPE = 128
+import globals
+
 
 def softmax(logits):
     shape = tf.shape(logits)
