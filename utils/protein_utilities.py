@@ -3,6 +3,7 @@ import pandas
 from data_utilities import parse
 
 # Adapted from https://github.com/niranjangavade98/DNA-to-Protein-sequence
+# and https://github.com/av1659/fbgan/blob/master/utils/bio_utils.py
 
 DNA_protein_MAP = {
             'ATA': 'I', 'ATC': 'I', 'ATT': 'I', 'ATG': 'M',
@@ -23,19 +24,27 @@ DNA_protein_MAP = {
             'TGC': 'C', 'TGT': 'C', 'TGA': 'P', 'TGG': 'W',
         }
 
-protein_DNA_MAP = {v: k for k, v in DNA_to_protein.items()}
+protein_DNA_MAP = {v: k for k, v in DNA_protein_MAP.items()}
 protein_DNA_MAP['P'] = 'TAG'
 
 
-def protein_to_DNA(protein_sequences, triplets = False):
+def protein_to_DNA(protein_sequences):
     global protein_DNA_MAP
-    parsed = parse(protein_sequences)
 
+    parsed = parse(protein_sequences)
     DNA_sequences = []
+
+    if type(parsed[0]) in (str, np.str_):
+        DNA_merged = ''.join([a for a in parsed])
+        DNA_sequences += ['ATG' + DNA_merged + "TAG"]
+        return DNA_sequences
 
     for seq in parsed:
         DNA = [protein_DNA_MAP[a] for a in seq]
-        DNA_sequences = ['ATG'  + "".join(DNA) + "TAG"]
+        DNA_merged = ''.join([a for a in DNA])
+        DNA_sequences += ['ATG' + DNA_merged + "TAG"]
+
+    DNA_sequences = np.array(DNA_sequences).reshape(-1, 1)
 
     return DNA_sequences
 

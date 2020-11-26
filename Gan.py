@@ -7,7 +7,7 @@ import globals
 
 class GAN():
 
-    def __init__(self, batch_size=BATCH_SIZE, discriminator_steps=0, lr=0.0002, gradient_penalty_weight=10):
+    def __init__(self, batch_size=BATCH_SIZE, discriminator_steps=2, lr=0.0002, gradient_penalty_weight=10):
         self.batch_size = batch_size
         self.G = Generator()
         self.D = Discriminator()
@@ -120,7 +120,8 @@ class GAN():
                     self.history['sequences'].append(example_sequence)
 
                     print(
-                        f'\t Step {step}/{n_steps} \t Generator: {G_loss.numpy()} \t Discriminator: {D_loss.numpy()} \t Sequence: {example_sequence}')
+                        f'\t Step {step}/{n_steps} \t Generator: {G_loss.numpy()} \t Discriminator: {D_loss.numpy()} '
+                        f'\t Sequence: {example_sequence}')
 
                 step += 1
 
