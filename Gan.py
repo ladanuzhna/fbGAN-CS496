@@ -2,17 +2,12 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 from Models import Generator, Discriminator
-
-import globals 
-
-
-# BATCH_SIZE = 32
-# NOISE_SHAPE = 128
+import globals
 
 
 class GAN():
 
-    def __init__(self, batch_size=BATCH_SIZE, discriminator_steps=5, lr=0.0002, gradient_penalty_weight=10):
+    def __init__(self, batch_size=BATCH_SIZE, discriminator_steps=0, lr=0.0002, gradient_penalty_weight=10):
         self.batch_size = batch_size
         self.G = Generator()
         self.D = Discriminator()
@@ -24,6 +19,7 @@ class GAN():
         self.D_optimizer = tf.keras.optimizers.Adam(learning_rate=lr, beta_1=0.5, beta_2=0.9)
 
         self.gp_weight = gradient_penalty_weight
+        self.step_log = None
 
     def generate_samples(self, number=None):
         if number is None:
@@ -36,7 +32,11 @@ class GAN():
         return -tf.math.reduce_mean(fake_score)
 
     def discriminator_loss(self, real_score, fake_score):
-        return tf.math.reduce_mean(real_score) - tf.math.reduce_mean(fake_score)
+        # fake_score_mean = tf.math.reduce_mean(fake_score)
+        # real_score_mean = tf.math.reduce_mean(real_score)
+        # loss = real_score_mean - fake_score_mean
+        # return, loss, fake_score_mean, real_score_mean
+        return tf.math.reduce_mean(fake_score) - tf.math.reduce_mean(real_score)
 
     # @tf.function
     def gradient_penalty(self, real_samples, fake_samples):
@@ -88,18 +88,23 @@ class GAN():
         dataset = dataset.shuffle(inputs.shape[0], seed=0).batch(self.batch_size, drop_remainder=True)
         return dataset
 
-    def train(self, inputs, epochs):
+    def train(self, inputs, epochs, step_log=50):
 
-        # Pre-train discriminator 
+        n_steps = len(self.create_dataset(inputs)) * epochs
+        step = 0
+        self.step_log = step_log
+
+        # Pre-train discriminator
+        print('Pretraining discriminator...')
         for step in range(self.d_steps):
-            dataset = self.create_dataset(inputs).as_numpy_iterator()
+            dataset = self.create_dataset(inputs)
 
             for sample_batch in dataset:
                 self.D_train_step(sample_batch)
 
         # Train discriminator and generator
         for epoch in range(epochs):
-            dataset = self.create_dataset(inputs).as_numpy_iterator()
+            dataset = self.create_dataset(inputs)
 
             print(f"Epoch {epoch}/{epochs}:")
 
@@ -107,14 +112,28 @@ class GAN():
                 G_loss = self.G_train_step()
                 D_loss, GP = self.D_train_step(sample_batch)
 
-            example_sequence = gan.generate_samples(number=1)
+                if step % self.step_log == 0:
+                    example_sequence = self.get_highest_scoring()
+                    self.history["G_losses"].append(G_loss.numpy())
+                    self.history["D_losses"].append(D_loss.numpy())
+                    self.history['gradient_penalty'].append(GP.numpy())
+                    self.history['sequences'].append(example_sequence)
 
-            self.history["G_losses"].append(G_loss.numpy())
-            self.history["D_losses"].append(D_loss.numpy())
-            self.history['gradient_penalty'].append(GP.numpy())
-            self.history['sequences'].append(example_sequence)
+                    print(
+                        f'\t Step {step}/{n_steps} \t Generator: {G_loss.numpy()} \t Discriminator: {D_loss.numpy()} \t Sequence: {example_sequence}')
 
-            print(f"\tGenerator loss: {round(G_loss.numpy(), 2)}. \tDiscriminator loss: {round(D_loss.numpy(), 2)}")
+                step += 1
+
+    def get_highest_scoring(self):
+        fake_samples = self.generate_samples(BATCH_SIZE)
+        fake_scores = self.D(fake_samples)
+        best_indx = np.argmax(fake_scores)
+        best_seq = fake_samples[best_indx].numpy()
+
+        OneHot = OneHot_Seq()
+        decod_best_seq = OneHot.onehot_to_seq(best_seq)
+
+        return decod_best_seq
 
     def plot_history(self):
         D_losses = np.array(self.history['D_losses'])
@@ -123,16 +142,14 @@ class GAN():
         plt.plot(np.arange(D_losses.shape[0]), D_losses, label='Discriminator loss')
         plt.plot(np.arange(G_losses.shape[0]), G_losses, label='Generator loss')
         plt.ylabel('Loss')
-        plt.xlabel('Epochs')
+        plt.xlabel(f'Steps (x{self.step_log})')
         plt.legend()
 
         plt.show()
 
     def show_sequences_history(self):
-        OneHot = OneHot_Seq()
         sequences_history = self.history['sequences']
-        decod = [OneHot.onehot_to_seq(seq.numpy()) for seq in sequences_history]
 
-        print('History of generated sequences... \n')
-        for i in range(len(decod)):
-            print(f'Epoch {i}: \t {decod[i][0]}')
+        print('History of top scoring generated sequences... \n')
+        for i in range(len(sequences_history)):
+            print(f'Step {i * self.step_log}: \t {sequences_history[i][0]}')
