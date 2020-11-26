@@ -2,7 +2,12 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 from Models import Generator, Discriminator
+
 import globals 
+
+
+# BATCH_SIZE = 32
+# NOISE_SHAPE = 128
 
 
 class GAN():
