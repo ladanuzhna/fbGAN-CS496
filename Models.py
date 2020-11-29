@@ -35,12 +35,12 @@ class Generator(tf.keras.Model):
         implementation of Generator
         :param input_size: size of the sequence (input noise)
         """
-        super().__init__(name='generator')
+        super(Generator, self).__init__(name='generator')
 
         self.model = tf.keras.models.Sequential()
         self.model.add(Input(shape = (NOISE_SHAPE,), batch_size = BATCH_SIZE))
         self.model.add(Dense(units = DIM*SEQ_LENGTH))
-        self.model.add(Reshape((-1, SEQ_LENGTH, DIM)))
+        self.model.add(Reshape((SEQ_LENGTH, DIM)))
 
         self.model.add(ResidualBlock())
         self.model.add(ResidualBlock())
@@ -50,7 +50,7 @@ class Generator(tf.keras.Model):
 
         self.model.add(Conv1D(filters = N_CHAR, kernel_size = 1))
 
-    def __call__(self, inputs):
+    def call(self, inputs):
         x = self.model(inputs)
         x = softmax(x)
         return x
@@ -62,7 +62,7 @@ class Discriminator(tf.keras.Model):
         implementation of Discriminator
         :param clip: value to which you clip the gradients (or False)
         """
-        super().__init__(name='discriminator')
+        super(Discriminator, self).__init__(name='discriminator')
 
         self.model = tf.keras.models.Sequential()
         self.model.add(Input(shape = (SEQ_LENGTH,N_CHAR), batch_size = BATCH_SIZE))
@@ -78,18 +78,15 @@ class Discriminator(tf.keras.Model):
         self.model.add(Dense(units = DIM*SEQ_LENGTH))
         self.model.add(Dense(units = 1))
 
-
-    def __call__(self,inputs,training = False):
+    def call(self,inputs,training = False):
         """
         model's forward pass
         :param X: input of the size [batch_size, seq_length];
         :param training: specifies the behavior of the call;
         :return: Y: probability of each sequences being real of shape [batch_size, 1]
         """
-
         x = self.model(inputs)
         return x
-
 
 
 class Feedback_Net(tf.keras.Model):
