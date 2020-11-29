@@ -49,5 +49,11 @@ def protein_to_DNA(protein_sequences):
     return DNA_sequences
 
 
+def DNA_to_protein(DNA_sequences):
+    global DNA_protein_MAP
+
+    pass
+
+
 
 

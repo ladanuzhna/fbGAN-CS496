@@ -1,16 +1,15 @@
 import tensorflow as tf
 import matplotlib.pyplot as plt
-
 from Models import Generator, Discriminator
-import globals
-
 
 class GAN():
 
-    def __init__(self, batch_size=BATCH_SIZE, discriminator_steps=2, lr=0.0002, gradient_penalty_weight=10):
+    def __init__(self, batch_size=BATCH_SIZE, discriminator_steps=0, lr=0.0002,
+                 gradient_penalty_weight=5, generator_weights_path=None, discriminator_weights_path=None):
         self.batch_size = batch_size
         self.G = Generator()
         self.D = Discriminator()
+
         self.d_steps = discriminator_steps
 
         self.history = {"G_losses": [], "D_losses": [], "gradient_penalty": [], "sequences": []}
@@ -21,21 +20,31 @@ class GAN():
         self.gp_weight = gradient_penalty_weight
         self.step_log = None
 
-    def generate_samples(self, number=None):
+        self.checkpoint_dir = './weights/'
+
+        if generator_weights_path:
+            self.G.load_weights(generator_weights_path)
+
+        if discriminator_weights_path:
+            self.D.load_weights(discriminator_weights_path)
+
+
+    def generate_samples(self, number=None, decoded = False):
         if number is None:
             number = self.batch_size
         z = tf.random.normal([number, NOISE_SHAPE])
         generated = self.G(z)
+
+        if decoded:
+            OneHot = OneHot_Seq(letter_type=TASK_TYPE)
+            generated = OneHot.onehot_to_seq(generated)
+
         return generated
 
     def generator_loss(self, fake_score):
         return -tf.math.reduce_mean(fake_score)
 
     def discriminator_loss(self, real_score, fake_score):
-        # fake_score_mean = tf.math.reduce_mean(fake_score)
-        # real_score_mean = tf.math.reduce_mean(real_score)
-        # loss = real_score_mean - fake_score_mean
-        # return, loss, fake_score_mean, real_score_mean
         return tf.math.reduce_mean(fake_score) - tf.math.reduce_mean(real_score)
 
     # @tf.function
@@ -88,8 +97,7 @@ class GAN():
         dataset = dataset.shuffle(inputs.shape[0], seed=0).batch(self.batch_size, drop_remainder=True)
         return dataset
 
-    def train(self, inputs, epochs, step_log=50):
-
+    def train(self, inputs, epochs, step_log=50, save_per_epochs=10):
         n_steps = len(self.create_dataset(inputs)) * epochs
         step = 0
         self.step_log = step_log
@@ -118,23 +126,25 @@ class GAN():
                     self.history["D_losses"].append(D_loss.numpy())
                     self.history['gradient_penalty'].append(GP.numpy())
                     self.history['sequences'].append(example_sequence)
-
                     print(
-                        f'\t Step {step}/{n_steps} \t Generator: {G_loss.numpy()} \t Discriminator: {D_loss.numpy()} '
-                        f'\t Sequence: {example_sequence}')
-
+                        f'\t Step {step}/{n_steps} \t Generator: {G_loss.numpy()} \t Discriminator: {D_loss.numpy()} \t Sequence: {example_sequence}')
                 step += 1
 
-    def get_highest_scoring(self):
-        fake_samples = self.generate_samples(BATCH_SIZE)
+            if epoch % save_per_epochs == 0:
+                self.G.save_weights(os.path.join(self.checkpoint_dir, f'E{epoch}_Generator'))
+                self.D.save_weights(os.path.join(self.checkpoint_dir, f'E{epoch}_Discriminator'))
+
+    def get_highest_scoring(self, num_to_generate = BATCH_SIZE, num_to_return = 1, decoded = True):
+        fake_samples = self.generate_samples(num_to_generate)
         fake_scores = self.D(fake_samples)
-        best_indx = np.argmax(fake_scores)
+        best_indx = np.sort(fake_scores)[-num_to_return:]
         best_seq = fake_samples[best_indx].numpy()
 
-        OneHot = OneHot_Seq()
-        decod_best_seq = OneHot.onehot_to_seq(best_seq)
+        if decoded:
+            OneHot = OneHot_Seq(letter_type=TASK_TYPE)
+            best_seq = OneHot.onehot_to_seq(best_seq)
 
-        return decod_best_seq
+        return best_seq
 
     def plot_history(self):
         D_losses = np.array(self.history['D_losses'])
@@ -150,7 +160,6 @@ class GAN():
 
     def show_sequences_history(self):
         sequences_history = self.history['sequences']
-
         print('History of top scoring generated sequences... \n')
         for i in range(len(sequences_history)):
             print(f'Step {i * self.step_log}: \t {sequences_history[i][0]}')
