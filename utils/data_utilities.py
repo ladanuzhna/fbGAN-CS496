@@ -59,7 +59,7 @@ def get_data(return_sequence=False):
         return X_train, X_test, y_train, y_test
 
 
-def get_sequences(path=None, min_len=MIN_LEN, max_len=MAX_LEN):
+def get_sequences(path=None, min_len=MIN_LEN_PROTEIN, max_len=MAX_LEN_PROTEIN):
     if path is None:
         path = '/content/drive/My Drive/Colab Notebooks/FB-GAN_496/data/2018-06-06-ss.cleaned.csv'
 
@@ -87,6 +87,29 @@ def parse(sequences):
     parsed = pd.DataFrame(sequences).iloc[:, 0].apply(parse).to_numpy().tolist()
 
     return parsed
+
+
+def prepare_dataset(path, split = 0.01):
+
+    # Load protein sequences and shuffle them
+    X_train,_, _, _ = get_sequences(path, split)
+    X_train = X_train.tolist()
+    np.random.shuffle(X_train)
+
+    # print(f'Number of training samples: {len(X_train)}')
+
+    # Translate to DNA encoding
+    X = protein_to_DNA(X_train)
+    # print(f'Example of translated DNA sequences: \n {X[0]}')
+
+    # One Hot encode into 5 categories, ATCG and P for padded positions
+    OneHot = OneHot_Seq(letter_type= 'DNA')
+    real_sequences = OneHot.seq_to_onehot(X)
+    real_sequences
+
+    # print(f'Example of OneHot encoding of DNA sequences: {real_sequences[0]}')
+
+    return real_sequences
 
 
 class OneHot_Seq:
@@ -158,3 +181,4 @@ class OneHot_Seq:
         decoded_sequences = [[''.join([aa for aa in seq])] for seq in sequences]
 
         return decoded_sequences
+

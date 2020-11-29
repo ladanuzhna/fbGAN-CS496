@@ -137,7 +137,7 @@ class GAN():
     def get_highest_scoring(self, num_to_generate = BATCH_SIZE, num_to_return = 1, decoded = True):
         fake_samples = self.generate_samples(num_to_generate)
         fake_scores = self.D(fake_samples)
-        best_indx = np.sort(fake_scores)[-num_to_return:]
+        best_indx = np.argsort(fake_scores)[-num_to_return:]
         best_seq = fake_samples[best_indx].numpy()
 
         if decoded:
