@@ -1,7 +1,7 @@
 from Gan import GAN
 from Models import FeedbackNet
 from globals import *
-
+from utils.protein_utilities import protein_to_DNA, DNA_to_protein
 
 class GAN_FBNet():
 
@@ -14,8 +14,12 @@ class GAN_FBNet():
         self.checkpoint_dir = './'
 
     def get_scores(self, inputs):
+        # convert the DNA sequences to protein sequences
+        protein_sequence = DNA_to_protein(inputs)
+
         # use FBNet to grade the sequences
         scores = None
+
         return scores
 
     def add_samples(self, generated, scores, score_threshold=0.75, replace=False):

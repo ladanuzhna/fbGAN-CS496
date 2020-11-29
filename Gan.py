@@ -28,6 +28,7 @@ class GAN():
         if discriminator_weights_path:
             self.D.load_weights(discriminator_weights_path)
 
+
     def generate_samples(self, number=None, decoded = False):
         if number is None:
             number = self.batch_size
@@ -44,10 +45,6 @@ class GAN():
         return -tf.math.reduce_mean(fake_score)
 
     def discriminator_loss(self, real_score, fake_score):
-        # fake_score_mean = tf.math.reduce_mean(fake_score)
-        # real_score_mean = tf.math.reduce_mean(real_score)
-        # loss = real_score_mean - fake_score_mean
-        # return, loss, fake_score_mean, real_score_mean
         return tf.math.reduce_mean(fake_score) - tf.math.reduce_mean(real_score)
 
     # @tf.function
