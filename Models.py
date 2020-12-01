@@ -89,24 +89,22 @@ class Discriminator(tf.keras.Model):
         return x
 
 
-class Feedback_Net(tf.keras.Model):
-
-    def __init__(self,n_tags = 9,n_words=8421):
-        input = Input(shape=(SEQ_LENGTH,))
-        x = Embedding(input_dim=n_words, output_dim=128, input_length=SEQ_LENGTH)(input)
-        x = LayerNormalization()(x)
-        x = Bidirectional(LSTM(units=64, return_sequences=True, recurrent_dropout=0.1))(x)
-        x = Bidirectional(LSTM(units=64, return_sequences=True, recurrent_dropout=0.1))(x)
-        x = Bidirectional(LSTM(units=64, return_sequences=True, recurrent_dropout=0.1))(x)
-        y = TimeDistributed(Dense(n_tags, activation="softmax"))(x)
-        self.model = Model(input, y)
-
-    def __call__(self,X,training):
-        """
-
-        :param X: input of the size [batch_size, seq_length];
-        :param training: specifies the behavior of the call;
-        :return: Y: scores for the input sequences;
-        """
-        return self.model(X)
-
+class Feedback():
+  def __init__(self):
+    input = Input(shape=(MAX_LEN,))
+    x = Embedding(input_dim=n_words, output_dim=128, input_length=MAX_LEN)(input)
+    x = LayerNormalization()(x)
+    x = Bidirectional(LSTM(units=128, return_sequences=True,use_bias=True))(x)
+    x = Bidirectional(LSTM(units=128, return_sequences=True,use_bias=True))(x)
+    x = Bidirectional(LSTM(units=128,use_bias=True))(x)
+    y = Dense(n_tags, activation="sigmoid")(x)
+    self.model = Model(input, y)
+  
+  def train(self,OPTIM="rmsprop", LOSS='binary_crossentropy', BATCH_SIZE =128, EPOCHS = 5):
+    self.model.compile(optimizer=OPTIM, loss=LOSS, metrics=[tf.keras.metrics.Precision(), 
+                                                                            tf.keras.metrics.Recall(),
+                                                                            tf.keras.metrics.Hinge()])
+    history = self.model.fit(X_train, y_train, batch_size=BATCH_SIZE, epochs=EPOCHS,
+                              validation_data=(X_test, y_test), verbose=1)
+    self.model.save(save_feedback)
+    return history
