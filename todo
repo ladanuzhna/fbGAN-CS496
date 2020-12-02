@@ -1,0 +1,14 @@
+To implement:
+1. Feedback Net module
+2. Plotting module
+2. Edge case when no samples have a score that passes the threshold for all features
+
+Issue:
+1. There is just a very few samples added to the discriminator during each step,
+ the increase of  is about 5% per epoch (batch size = 264, 10 steps per epoch) which means that the discriminator
+ might never see these samples (due to batching and limited step per epoch).
+
+ Possible workarounds:
+ 1. decrease threshold altogether
+ 2. decrease threshold at first and increase with each epoch/step
+ 1. average the score out? To get sequences that might have say 5/6 desired features but miss one?
