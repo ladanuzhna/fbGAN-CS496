@@ -9,6 +9,7 @@ Issues:
  might never see these samples (due to batching and limited step per epoch).
 
     Possible workarounds:
-     a. decrease threshold altogether
-     b. decrease threshold at first and increase with each epoch/step
-     c. average the score out? To get sequences that might have say 5/6 desired features but miss one?
+     a. THIS WORKED: limit the number of sequences inputted to the FB-GAN to as low as 2000
+     b. decrease threshold altogether
+     c. decrease threshold at first and increase with each epoch/step
+     d. average the score out? To get sequences that might have say 5/6 desired features but miss one?
