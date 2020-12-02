@@ -1,7 +1,11 @@
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import numpy as np
 from models import Generator, Discriminator
+from utils.protein_utilities import *
+from utils.data_utilities import *
 from globals import *
+
 
 class GAN():
 
@@ -21,16 +25,13 @@ class GAN():
         self.gp_weight = gradient_penalty_weight
         self.step_log = None
 
-        self.checkpoint_dir = './weights/'
-
         if generator_weights_path:
             self.G.load_weights(generator_weights_path)
 
         if discriminator_weights_path:
             self.D.load_weights(discriminator_weights_path)
 
-
-    def generate_samples(self, number=None, decoded = False):
+    def generate_samples(self, number=None, decoded=False):
         if number is None:
             number = self.batch_size
         z = tf.random.normal([number, NOISE_SHAPE])
@@ -46,6 +47,10 @@ class GAN():
         return -tf.math.reduce_mean(fake_score)
 
     def discriminator_loss(self, real_score, fake_score):
+        # fake_score_mean = tf.math.reduce_mean(fake_score)
+        # real_score_mean = tf.math.reduce_mean(real_score)
+        # loss = real_score_mean - fake_score_mean
+        # return, loss, fake_score_mean, real_score_mean
         return tf.math.reduce_mean(fake_score) - tf.math.reduce_mean(real_score)
 
     # @tf.function
@@ -98,7 +103,7 @@ class GAN():
         dataset = dataset.shuffle(inputs.shape[0], seed=0).batch(self.batch_size, drop_remainder=True)
         return dataset
 
-    def train(self, inputs, epochs, step_log=50, save_per_epochs=10):
+    def train(self, inputs, epochs, step_log=50):
         n_steps = len(self.create_dataset(inputs)) * epochs
         step = 0
         self.step_log = step_log
@@ -131,14 +136,10 @@ class GAN():
                         f'\t Step {step}/{n_steps} \t Generator: {G_loss.numpy()} \t Discriminator: {D_loss.numpy()} \t Sequence: {example_sequence}')
                 step += 1
 
-            if epoch % save_per_epochs == 0:
-                self.G.save_weights(os.path.join(self.checkpoint_dir, f'E{epoch}_Generator'))
-                self.D.save_weights(os.path.join(self.checkpoint_dir, f'E{epoch}_Discriminator'))
-
-    def get_highest_scoring(self, num_to_generate = BATCH_SIZE, num_to_return = 1, decoded = True):
+    def get_highest_scoring(self, num_to_generate=BATCH_SIZE, num_to_return=1, decoded=True):
         fake_samples = self.generate_samples(num_to_generate)
         fake_scores = self.D(fake_samples)
-        best_indx = np.argsort(fake_scores)[-num_to_return:]
+        best_indx = np.argmax(fake_scores)
         best_seq = fake_samples[best_indx].numpy()
 
         if decoded:

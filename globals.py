@@ -1,6 +1,7 @@
 # GLOBAL VARIABLES
+import os
 
-# GLOBAL VARIABLES
+DESIRED_FEATURES = ['C', 'H', 'E']
 
 MAX_LEN = 243
 MIN_LEN = 0
@@ -16,5 +17,16 @@ BATCH_SIZE = 128
 N_CHAR = 5
 NOISE_SHAPE = 128
 
-# DATA_PATH = '/content/drive/My Drive/Colab Notebooks/FB-GAN_496/data/2018-06-06-ss.cleaned.csv'
-DATA_PATH = '/Users/kzadorozhny/Desktop/FB_GAN_496/data_temp/2018-06-06-ss.cleaned.csv'
+
+
+###### UPDATE THE PATHS ######
+
+# Select a path where your data are stores
+PATH_DATA = '/drive/MyDrive/Colab Notebooks/FB-GAN_496/data/2018-06-06-ss.cleaned.csv'
+
+# Select paths to the saved weights of the gan and feedback
+PATH_GAN = '/drive/MyDrive/Colab Notebooks/FB-GAN_496/weights/gan'
+PATH_G = os.path.join(PATH_GAN, 'G243')
+PATH_D = os.path.join(PATH_GAN, 'D243')
+
+PATH_FB = '/drive/MyDrive/Colab Notebooks/FB-GAN_496/weights/feedback'
