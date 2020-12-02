@@ -1,6 +1,7 @@
 import tensorflow as tf
 import matplotlib.pyplot as plt
-from Models import Generator, Discriminator
+from models import Generator, Discriminator
+from globals import *
 
 class GAN():
 

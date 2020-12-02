@@ -1,5 +1,5 @@
-from Gan import GAN
-from Models import FeedbackNet
+from gan import GAN
+from models import FeedbackNet
 from globals import *
 from utils.protein_utilities import protein_to_DNA, DNA_to_protein
 

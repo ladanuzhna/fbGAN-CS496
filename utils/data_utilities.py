@@ -1,11 +1,13 @@
 import numpy as np
 import pandas as pd
+import keras
 from keras.preprocessing import sequence
 from keras.preprocessing.text import Tokenizer
 from sklearn.model_selection import train_test_split
 from keras.utils import to_categorical
 
-import globals
+from utils.protein_utilities import protein_to_DNA
+from globals import *
 
 
 def triplets(sequences):
@@ -41,13 +43,13 @@ def get_data(return_sequence=False):
     input_grams = triplets(input_seqs)
     tokenizer_encoder.fit_on_texts(input_grams)
     input_data = tokenizer_encoder.texts_to_sequences(input_grams)
-    input_data = sequence.pad_sequences(input_data, maxlen=MAX_LEN, padding='post')
+    input_data = keras.preprocessing.sequence.pad_sequences(input_data, maxlen=MAX_LEN, padding='post')
 
     # Transform targets
     tokenizer_decoder = Tokenizer(char_level=True)
     tokenizer_decoder.fit_on_texts(target_seqs)
     target_data = tokenizer_decoder.texts_to_sequences(target_seqs)
-    target_data = sequence.pad_sequences(target_data, maxlen=MAX_LEN, padding='post')
+    target_data = keras.preprocessing.sequence.pad_sequences(target_data, maxlen=MAX_LEN, padding='post')
     target_data = to_categorical(target_data)
 
     X_train, X_test, y_train, y_test = train_test_split(input_data, target_data, test_size=.3, random_state=1)
@@ -105,7 +107,6 @@ def prepare_dataset(path, split = 0.01):
     # One Hot encode into 5 categories, ATCG and P for padded positions
     OneHot = OneHot_Seq(letter_type= 'DNA')
     real_sequences = OneHot.seq_to_onehot(X)
-    real_sequences
 
     # print(f'Example of OneHot encoding of DNA sequences: {real_sequences[0]}')
 
@@ -144,7 +145,7 @@ class OneHot_Seq:
         for i in range(parsed.shape[0]):
             parsed[i] = np.vectorize(self.letters_dict.get)(parsed[i])
 
-        parsed = pad_sequences(parsed, maxlen=self.max_length, value=0, padding='post')
+        parsed = keras.preprocessing.sequence.pad_sequences(parsed, maxlen=self.max_length, value=0, padding='post')
 
         return parsed
 
@@ -181,4 +182,9 @@ class OneHot_Seq:
         decoded_sequences = [[''.join([aa for aa in seq])] for seq in sequences]
 
         return decoded_sequences
+
+
+
+
+
 
